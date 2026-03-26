@@ -45,28 +45,43 @@ class CandidateService:
             )
         return candidate
 
+    # def search(self, query_params):
+    #     qs = Candidate.objects.all()
+    #     if name := query_params.get("name"):
+    #         qs = qs.filter(full_name__icontains=name)
+    #     if party := query_params.get("party"):
+    #         qs = qs.filter(party__icontains=party)
+    #     if education := query_params.get("education"):
+    #         qs = qs.filter(education=education)
+    #     if min_age := query_params.get("min_age"):
+    #         qs = [c for c in qs if c.age >= int(min_age)]
+    #         return qs
+    #     if max_age := query_params.get("max_age"):
+    #         qs = [c for c in qs if c.age <= int(max_age)]
+    #         return qs
+
+    
     def search(self, query_params):
         qs = Candidate.objects.all()
+
         if name := query_params.get("name"):
             qs = qs.filter(full_name__icontains=name)
+
         if party := query_params.get("party"):
             qs = qs.filter(party__icontains=party)
+
         if education := query_params.get("education"):
             qs = qs.filter(education=education)
-        # if min_age := query_params.get("min_age"):
-        #     qs = [c for c in qs if c.age >= int(min_age)]
-        #     return qs
-        # if max_age := query_params.get("max_age"):
-        #     qs = [c for c in qs if c.age <= int(max_age)]
-        #     return qs
 
-        
-        # Bug 1 and 2 fix
+        # FIX: Do not convert QuerySet to a Python list.
+        # FIX: Do not return early here, because that prevents other filters from being applied.
         if min_age := query_params.get("min_age"):
-            qs = qs.filter(age__gte=int(min_age))
+            qs = qs.filter(age__gte=int(min_age))  # fixed line
 
+        # FIX: Keep using ORM filtering so the queryset remains chainable and efficient.
         if max_age := query_params.get("max_age"):
-            qs = qs.filter(age__lte=int(max_age))
+            qs = qs.filter(age__lte=int(max_age))  # fixed line
+
         return qs
 
 
