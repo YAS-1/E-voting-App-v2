@@ -32,7 +32,7 @@ class AdminLoginView(APIView):
     serializer_class = AdminLoginSerializer
 
     def post(self, request):
-        serializer = AdminLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = AuthenticationService()
@@ -62,7 +62,7 @@ class VoterLoginView(APIView):
     serializer_class = VoterLoginSerializer
 
     def post(self, request):
-        serializer = VoterLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = AuthenticationService()
@@ -92,7 +92,7 @@ class VoterRegistrationView(APIView):
     serializer_class = VoterRegistrationSerializer
 
     def post(self, request):
-        serializer = VoterRegistrationSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = VoterRegistrationService()
