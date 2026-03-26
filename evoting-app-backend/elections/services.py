@@ -56,7 +56,7 @@ class CandidateService:
         #     return qs
 
         
-        # Bug 1 fix
+        # Bug 1 and 2 fix
         if min_age := query_params.get("min_age"):
             qs = qs.filter(age__gte=int(min_age))
 

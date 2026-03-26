@@ -4,3 +4,9 @@
 - This means that other filters will not be considered. 
 - Only 1 filter works at a time. 
 - It goes unnoticed because results are still returned.
+
+2. List Conversion
+- The queryset is being converted into a python list.
+- It breaks the ORM optimizations and leads to poor performance on large datasets. 
+- It goes unnoticed since it works well with small datasets. 
+- The fix ensures the usee of ORM filtering. 
