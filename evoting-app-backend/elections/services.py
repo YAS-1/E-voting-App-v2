@@ -29,20 +29,41 @@ class CandidateService:
         )
         return candidate
 
+    # def deactivate(self, candidate_id, deleted_by):
+    #     candidate = Candidate.objects.get(pk=candidate_id)
+    #     # Added an if-else block to check if the candidate is part of any active poll before deactivating
+    #     if candidate.pollposition_set.filter(poll__status=Poll.Status.OPEN).exists():
+    #         raise ValueError("Cannot deactivate candidate in an active poll.")
+    #     else:
+    #         candidate.is_active = False
+    #         candidate.save(update_fields=["is_active"])
+    #         self._audit.log(
+    #             "DELETE_CANDIDATE",
+    #             deleted_by.username,
+    #             f"Deactivated candidate: {candidate.full_name} (ID: {candidate.id})",
+    #         )
+    #     return candidate
+
+
     def deactivate(self, candidate_id, deleted_by):
-        candidate = Candidate.objects.get(pk=candidate_id)
-        # Solving bug 3
-        # Added an if-else block to check if the candidate is part of any active poll before deactivating
+        # FIX: Safely fetch candidate and avoid raw .get() without validation.
+        try:
+            candidate = Candidate.objects.get(pk=candidate_id)  # fixed line
+        except Candidate.DoesNotExist:
+            raise ValueError("Candidate not found.")
+
+        # FIX: Prevent deactivation of candidates assigned to open polls.
         if candidate.pollposition_set.filter(poll__status=Poll.Status.OPEN).exists():
-            raise ValueError("Cannot deactivate candidate in an active poll.")
-        else:
-            candidate.is_active = False
-            candidate.save(update_fields=["is_active"])
-            self._audit.log(
-                "DELETE_CANDIDATE",
-                deleted_by.username,
-                f"Deactivated candidate: {candidate.full_name} (ID: {candidate.id})",
-            )
+            raise ValueError("Cannot deactivate a candidate assigned to an open poll.")
+
+        candidate.is_active = False
+        candidate.save(update_fields=["is_active"])
+
+        self._audit.log(
+            "DELETE_CANDIDATE",
+            deleted_by.username,
+            f"Deactivated candidate: {candidate.full_name} (ID: {candidate.id})",
+        )
         return candidate
 
     # def search(self, query_params):
