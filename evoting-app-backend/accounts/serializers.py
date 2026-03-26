@@ -13,12 +13,24 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
+    # class Meta:
+    #     model = User
+    #     fields = [
+    #         "id", "username", "email", "first_name", "last_name",
+    #         "full_name", "role", "is_active", "is_verified", "date_joined",
+    #         "password",
+    #     ]
+    #     read_only_fields = ["id", "date_joined"]
+
+    # def get_full_name(self, obj):
+    #     return obj.first_name + " " + obj.last_name
+
     class Meta:
         model = User
+        # 2 The password was is exposed in the response(security issue)
         fields = [
             "id", "username", "email", "first_name", "last_name",
             "full_name", "role", "is_active", "is_verified", "date_joined",
-            "password",
         ]
         read_only_fields = ["id", "date_joined"]
 
@@ -67,17 +79,36 @@ class VoterRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("A voter with this National ID already exists.")
         return value
 
+    # def validate_date_of_birth(self, value):
+    #     today = date.today()
+    #     age = today.year - value.year
+    #     if age < 18:
+    #         raise serializers.ValidationError(
+    #             "You must be at least 18 years old."
+    #         )
+    #     return value
+
+    #1 The checker was not taking date and month into account.
     def validate_date_of_birth(self, value):
         today = date.today()
-        age = today.year - value.year
+        age = today.year - value.year - (
+            (today.month, today.day) < (value.month, value.day)
+        )
         if age < 18:
             raise serializers.ValidationError(
                 "You must be at least 18 years old."
             )
         return value
 
+    # def validate_station_id(self, value):
+    #     if not VotingStation.objects.filter(pk=value).exists():
+    #         raise serializers.ValidationError("Invalid or inactive voting station.")
+    #     return value
+
+
+    # 3. The checker was not taking into account the inactive voting stations(fixed by adding a check for inactivity)
     def validate_station_id(self, value):
-        if not VotingStation.objects.filter(pk=value).exists():
+        if not VotingStation.objects.filter(pk=value, is_active=True).exists():
             raise serializers.ValidationError("Invalid or inactive voting station.")
         return value
 
