@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 
 from audit.services import AuditService
 from elections.models import Candidate, Poll, PollPosition, Position, VotingStation
@@ -47,12 +48,20 @@ class CandidateService:
             qs = qs.filter(party__icontains=party)
         if education := query_params.get("education"):
             qs = qs.filter(education=education)
+        # if min_age := query_params.get("min_age"):
+        #     qs = [c for c in qs if c.age >= int(min_age)]
+        #     return qs
+        # if max_age := query_params.get("max_age"):
+        #     qs = [c for c in qs if c.age <= int(max_age)]
+        #     return qs
+
+        
+        # Bug 1 fix
         if min_age := query_params.get("min_age"):
-            qs = [c for c in qs if c.age >= int(min_age)]
-            return qs
+            qs = qs.filter(age__gte=int(min_age))
+
         if max_age := query_params.get("max_age"):
-            qs = [c for c in qs if c.age <= int(max_age)]
-            return qs
+            qs = qs.filter(age__lte=int(max_age))
         return qs
 
 
