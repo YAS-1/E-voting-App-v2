@@ -15,3 +15,9 @@
 - There is no check before deactivation which clashes with business rules. 
 - It goes unnoticed since there is no immediate error. 
 - The fix is to add an if-else clause. 
+
+4. Poll status toggle logic 
+- The check for draft will always be false since its status has been set to open.
+- It will lead to incorrect logs. 
+- It goes unnoticed because the system still works, and just the logs are wrong. 
+- The fix is to store the previous state.  
