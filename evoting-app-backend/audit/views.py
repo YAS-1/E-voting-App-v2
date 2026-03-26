@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from accounts.permissions import IsAdminUser
 from audit.serializers import AuditLogSerializer
 from audit.services import AuditService
+from audit.models import AuditLog
 
 
 class AuditLogListView(generics.ListAPIView):
@@ -12,7 +13,9 @@ class AuditLogListView(generics.ListAPIView):
     serializer_class = AuditLogSerializer
 
     def get_queryset(self):
-        qs = AuditService.get_recent(limit=None)
+        # Using get_recent(limit=None) may cause unclear slicing behavior.
+        # Instead, query and filter directly improve performance and clarity.
+        qs = AuditLog.objects.all().order_by("-timestamp")
 
         if action := self.request.query_params.get("action"):
             qs = qs.filter(action=action)
