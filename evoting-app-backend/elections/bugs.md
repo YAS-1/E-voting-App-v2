@@ -27,4 +27,18 @@
 - This means a poll can end before it even starts, which doesn't make sense. 
 - It goes unnoticed because there is no system crash and the database accepts the dates. 
 - The issue only appears later on. 
-- The fix is to add a line that checks and validates the dates.  
+- The fix is to add a line that checks and validates the dates. 
+
+6. Missing station validation in poll creation. 
+- It does not check whether a station exists, or if it is still active. 
+- This means that a poll may be assigned to a station that is either inactive or one that doesn't exist at all. 
+- It goes unnoticed since there is no error. 
+- The fix is to validate the stations first. 
+
+7. Missing validation when assigning candidates. 
+- It doesn't check if all candidate ids are valid.
+- This means that some candidates are going to be ignored. 
+- It is unnoticed because the system still works.  
+- The fix is to check the candidate ids to ensure they are eligible. 
+
+8. 
