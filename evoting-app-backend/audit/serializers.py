@@ -8,5 +8,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
         model = AuditLog
 #  'id' and 'timestamp' are not set as read-only fields.
 # These fields could be modified during write operations, which can corrupt audit data.
-        fields = ["id", "timestamp", "action", "user_identifier", "details"]
+        fields = ["id", "timestamp", "action", "user", "details"]
         read_only_fields = ["id", "timestamp"]
+
+        
