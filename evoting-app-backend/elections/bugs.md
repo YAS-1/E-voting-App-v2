@@ -20,4 +20,11 @@
 - The check for draft will always be false since its status has been set to open.
 - It will lead to incorrect logs. 
 - It goes unnoticed because the system still works, and just the logs are wrong. 
-- The fix is to store the previous state.  
+- The fix is to store the previous state.
+
+5. Lack of validation of dates when creating polls
+- There is no check that ensure the star date is before the end date.
+- This means a poll can end before it even starts, which doesn't make sense. 
+- It goes unnoticed because there is no system crash and the database accepts the dates. 
+- The issue only appears later on. 
+- The fix is to add a line that checks and validates the dates.  

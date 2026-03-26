@@ -1,3 +1,5 @@
+from select import poll
+
 from django.db import transaction
 from django.db.models import Q
 
@@ -182,25 +184,73 @@ class PollService:
     def __init__(self):
         self._audit = AuditService()
 
+    # @transaction.atomic
+    # def create(self, validated_data, created_by):
+    #     poll = Poll.objects.create(
+    #         title=validated_data["title"],
+    #         description=validated_data.get("description", ""),
+    #         election_type=validated_data["election_type"],
+    #         start_date=validated_data["start_date"],
+    #         end_date=validated_data["end_date"],
+    #         status=Poll.Status.DRAFT,
+    #         created_by=created_by,
+    #     )
+    #     poll.stations.set(
+    #         VotingStation.objects.filter(pk__in=validated_data["station_ids"])
+    #     )
+    #     for pos_id in validated_data["position_ids"]:
+    #         PollPosition.objects.create(
+    #             poll=poll,
+    #             position_id=pos_id,
+    #         )
+    #     self._audit.log(
+    #         "CREATE_POLL",
+    #         created_by.username,
+    #         f"Created poll: {poll.title} (ID: {poll.id})",
+    #     )
+    #     return poll
+
+
     @transaction.atomic
     def create(self, validated_data, created_by):
+        start_date = validated_data["start_date"]
+        end_date = validated_data["end_date"]
+
+        # FIX: Validate poll dates before creating the poll.
+        if start_date >= end_date:
+            raise ValueError("End date must be after start date.")  # fixed validation
+
+        station_ids = validated_data["station_ids"]
+
+        # FIX: Only allow active stations to be assigned to a poll.
+        stations = VotingStation.objects.filter(
+            pk__in=station_ids,
+            is_active=True
+        )
+
+        # FIX: Ensure all provided station IDs are valid and active.
+        if stations.count() != len(station_ids):
+            raise ValueError("One or more voting stations are invalid or inactive.")  # fixed validation
+
         poll = Poll.objects.create(
             title=validated_data["title"],
             description=validated_data.get("description", ""),
             election_type=validated_data["election_type"],
-            start_date=validated_data["start_date"],
-            end_date=validated_data["end_date"],
+            start_date=start_date,
+            end_date=end_date,
             status=Poll.Status.DRAFT,
             created_by=created_by,
         )
-        poll.stations.set(
-            VotingStation.objects.filter(pk__in=validated_data["station_ids"])
-        )
+
+        # FIX: Use the validated active stations queryset.
+        poll.stations.set(stations)
+
         for pos_id in validated_data["position_ids"]:
             PollPosition.objects.create(
                 poll=poll,
                 position_id=pos_id,
             )
+
         self._audit.log(
             "CREATE_POLL",
             created_by.username,
@@ -246,9 +296,6 @@ class PollService:
                 )
                 if not has_candidates:
                     raise ValueError("Cannot open - no candidates assigned.")
-            # Bug 4 fix 
-            # Storing the previous state of the poll
-            previous_status = poll.status
             poll.status = Poll.Status.OPEN
             log_action = "OPEN_POLL" if poll.status == Poll.Status.DRAFT else "REOPEN_POLL"
         elif action == "close":
