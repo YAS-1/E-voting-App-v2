@@ -30,9 +30,11 @@ User = get_user_model()
 class AdminLoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = AdminLoginSerializer
+#Serializer class was declared here but not used in the post method. 
+# Use self.serializer_class instead of hardcoding the serializer so that the view remains flexible and follows DRF best practices.
 
     def post(self, request):
-        serializer = AdminLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = AuthenticationService()
@@ -61,8 +63,12 @@ class VoterLoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = VoterLoginSerializer
 
+#Serializer class was declared here but not used in the post method. 
+# Use self.serializer_class instead of hardcoding the serializer so that the view remains flexible and follows DRF best practices.
+
+
     def post(self, request):
-        serializer = VoterLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = AuthenticationService()
@@ -91,8 +97,12 @@ class VoterRegistrationView(APIView):
     permission_classes = [AllowAny]
     serializer_class = VoterRegistrationSerializer
 
+#Serializer class was declared here but not used in the post method. 
+# Use self.serializer_class instead of hardcoding the serializer so that the view remains flexible and follows DRF best practices.
+
+
     def post(self, request):
-        serializer = VoterRegistrationSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = VoterRegistrationService()
@@ -111,6 +121,13 @@ class VoterProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # Check if the user has a voter profile before accessing it
+        if not hasattr(request.user, "voter_profile"):
+            return Response(
+                {"detail": "Voter profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         serializer = VoterProfileSerializer(request.user.voter_profile)
         return Response(serializer.data)
 
@@ -120,7 +137,7 @@ class ChangePasswordView(APIView):
     serializer_class = ChangePasswordSerializer
 
     def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         if not request.user.check_password(serializer.validated_data["current_password"]):
@@ -178,6 +195,10 @@ class AdminListView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = AdminListSerializer
 
+#Serializer class was declared here but not used in the post method. 
+# Use self.serializer_class instead of hardcoding the serializer so that the view remains flexible and follows DRF best practices.
+
+
     def get_queryset(self):
         return User.objects.filter(role__in=User.ADMIN_ROLES).order_by("-date_joined")
 
@@ -186,8 +207,12 @@ class AdminCreateView(APIView):
     permission_classes = [IsSuperAdmin]
     serializer_class = AdminCreateSerializer
 
+#Serializer class was declared here but not used in the post method. 
+# Use self.serializer_class instead of hardcoding the serializer so that the view remains flexible and follows DRF best practices.
+
+
     def post(self, request):
-        serializer = AdminCreateSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         service = AdminManagementService()
