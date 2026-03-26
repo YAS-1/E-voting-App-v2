@@ -41,4 +41,7 @@
 - It is unnoticed because the system still works.  
 - The fix is to check the candidate ids to ensure they are eligible. 
 
-8. 
+8. Missing exception handling
+- If an object does not exist, there will be a crash. 
+- It leads to an API error. 
+- It goes unnoticed because it only happens on edge cases. 

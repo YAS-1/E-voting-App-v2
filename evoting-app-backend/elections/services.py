@@ -271,42 +271,108 @@ class PollService:
         )
         return poll
 
+    # @transaction.atomic
+    # def delete(self, poll_id, deleted_by):
+    #     poll = Poll.objects.get(pk=poll_id)
+    #     if poll.status == Poll.Status.OPEN:
+    #         raise ValueError("Cannot delete an open poll. Close it first.")
+    #     title = poll.title
+    #     poll.delete()
+    #     self._audit.log(
+    #         "DELETE_POLL",
+    #         deleted_by.username,
+    #         f"Deleted poll: {title}",
+    #     )
+
+
     @transaction.atomic
     def delete(self, poll_id, deleted_by):
-        poll = Poll.objects.get(pk=poll_id)
+        # FIX: Handle missing poll properly instead of allowing a raw exception.
+        try:
+            poll = Poll.objects.get(pk=poll_id)  # fixed line
+        except Poll.DoesNotExist:
+            raise ValueError("Poll not found.")
+
         if poll.status == Poll.Status.OPEN:
             raise ValueError("Cannot delete an open poll. Close it first.")
+
         title = poll.title
         poll.delete()
+
         self._audit.log(
             "DELETE_POLL",
             deleted_by.username,
             f"Deleted poll: {title}",
         )
 
+    # def toggle_status(self, poll_id, action, toggled_by):
+    #     poll = Poll.objects.prefetch_related("poll_positions__candidates").get(pk=poll_id)
+
+    #     if action == "open":
+    #         if poll.status not in (Poll.Status.DRAFT, Poll.Status.CLOSED):
+    #             raise ValueError(f"Cannot open a poll with status: {poll.status}")
+    #         if poll.status == Poll.Status.DRAFT:
+    #             has_candidates = any(
+    #                 pp.candidates.exists() for pp in poll.poll_positions.all()
+    #             )
+    #             if not has_candidates:
+    #                 raise ValueError("Cannot open - no candidates assigned.")
+    #         poll.status = Poll.Status.OPEN
+    #         log_action = "OPEN_POLL" if poll.status == Poll.Status.DRAFT else "REOPEN_POLL"
+    #     elif action == "close":
+    #         if poll.status != Poll.Status.OPEN:
+    #             raise ValueError("Only open polls can be closed.")
+    #         poll.status = Poll.Status.CLOSED
+    #         log_action = "CLOSE_POLL"
+    #     else:
+    #         raise ValueError(f"Invalid action: {action}")
+
+    #     poll.save(update_fields=["status"])
+    #     self._audit.log(
+    #         log_action,
+    #         toggled_by.username,
+    #         f"{log_action.replace('_', ' ').title()}: {poll.title}",
+    #     )
+    #     return poll
+
     def toggle_status(self, poll_id, action, toggled_by):
-        poll = Poll.objects.prefetch_related("poll_positions__candidates").get(pk=poll_id)
+        # FIX: Handle missing poll safely.
+        try:
+            poll = Poll.objects.prefetch_related("poll_positions__candidates").get(pk=poll_id)
+        except Poll.DoesNotExist:
+            raise ValueError("Poll not found.")
 
         if action == "open":
             if poll.status not in (Poll.Status.DRAFT, Poll.Status.CLOSED):
                 raise ValueError(f"Cannot open a poll with status: {poll.status}")
-            if poll.status == Poll.Status.DRAFT:
+
+            # FIX: Save the previous status before changing it.
+            previous_status = poll.status  # fixed line
+
+            if previous_status == Poll.Status.DRAFT:
                 has_candidates = any(
                     pp.candidates.exists() for pp in poll.poll_positions.all()
                 )
                 if not has_candidates:
                     raise ValueError("Cannot open - no candidates assigned.")
+
             poll.status = Poll.Status.OPEN
-            log_action = "OPEN_POLL" if poll.status == Poll.Status.DRAFT else "REOPEN_POLL"
+
+            # FIX: Use the previous status to determine the correct audit action.
+            log_action = "OPEN_POLL" if previous_status == Poll.Status.DRAFT else "REOPEN_POLL"  # fixed line
+
         elif action == "close":
             if poll.status != Poll.Status.OPEN:
                 raise ValueError("Only open polls can be closed.")
+
             poll.status = Poll.Status.CLOSED
             log_action = "CLOSE_POLL"
+
         else:
             raise ValueError(f"Invalid action: {action}")
 
         poll.save(update_fields=["status"])
+
         self._audit.log(
             log_action,
             toggled_by.username,
@@ -314,10 +380,37 @@ class PollService:
         )
         return poll
 
+    # def assign_candidates(self, poll_position_id, candidate_ids, assigned_by):
+    #     poll_position = PollPosition.objects.select_related("poll", "position").get(
+    #         pk=poll_position_id
+    #     )
+    #     if poll_position.poll.status == Poll.Status.OPEN:
+    #         raise ValueError("Cannot modify candidates of an open poll.")
+
+    #     eligible = Candidate.objects.filter(
+    #         pk__in=candidate_ids,
+    #         is_active=True,
+    #         is_approved=True,
+    #     )
+    #     poll_position.candidates.set(eligible)
+
+    #     self._audit.log(
+    #         "ASSIGN_CANDIDATES",
+    #         assigned_by.username,
+    #         f"Assigned {eligible.count()} candidates to {poll_position.position.title} "
+    #         f"in poll: {poll_position.poll.title}",
+    #     )
+    #     return poll_position
+
     def assign_candidates(self, poll_position_id, candidate_ids, assigned_by):
-        poll_position = PollPosition.objects.select_related("poll", "position").get(
-            pk=poll_position_id
-        )
+        # FIX: Safely fetch poll position.
+        try:
+            poll_position = PollPosition.objects.select_related("poll", "position").get(
+                pk=poll_position_id
+            )  # fixed line
+        except PollPosition.DoesNotExist:
+            raise ValueError("Poll position not found.")
+
         if poll_position.poll.status == Poll.Status.OPEN:
             raise ValueError("Cannot modify candidates of an open poll.")
 
@@ -326,6 +419,11 @@ class PollService:
             is_active=True,
             is_approved=True,
         )
+
+        # FIX: Ensure all candidate IDs are valid, active, and approved.
+        if eligible.count() != len(candidate_ids):
+            raise ValueError("One or more candidates are invalid, inactive, or not approved.")  # fixed validation
+
         poll_position.candidates.set(eligible)
 
         self._audit.log(
