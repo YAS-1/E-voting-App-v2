@@ -31,13 +31,18 @@ class CandidateService:
 
     def deactivate(self, candidate_id, deleted_by):
         candidate = Candidate.objects.get(pk=candidate_id)
-        candidate.is_active = False
-        candidate.save(update_fields=["is_active"])
-        self._audit.log(
-            "DELETE_CANDIDATE",
-            deleted_by.username,
-            f"Deactivated candidate: {candidate.full_name} (ID: {candidate.id})",
-        )
+        # Solving bug 3
+        # Added an if-else block to check if the candidate is part of any active poll before deactivating
+        if candidate.pollposition_set.filter(poll__status=Poll.Status.OPEN).exists():
+            raise ValueError("Cannot deactivate candidate in an active poll.")
+        else:
+            candidate.is_active = False
+            candidate.save(update_fields=["is_active"])
+            self._audit.log(
+                "DELETE_CANDIDATE",
+                deleted_by.username,
+                f"Deactivated candidate: {candidate.full_name} (ID: {candidate.id})",
+            )
         return candidate
 
     def search(self, query_params):
